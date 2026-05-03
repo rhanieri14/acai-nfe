@@ -29,9 +29,19 @@
     </div>
     <div class="actions">
       <button pButton pRipple
+              class="p-button-rounded p-button-text btn-grupos"
+              pTooltip="Grupos de complementos"
+              tooltipPosition="top"
+              (click)="gerenciarGrupos.emit(produto)">
+        <span class="grupos-badge-wrap">
+          <i class="pi pi-th-large"></i>
+          <span class="grupos-badge" *ngIf="totalGrupos > 0">{{ totalGrupos }}</span>
+        </span>
+      </button>
+      <button pButton pRipple
               icon="pi pi-pencil"
               class="p-button-rounded p-button-text btn-edit"
-              pTooltip="Editar"
+              pTooltip="Editar produto"
               tooltipPosition="top"
               (click)="editar.emit(produto)">
       </button>

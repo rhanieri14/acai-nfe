@@ -1,5 +1,307 @@
-<div class="placeholder-page">
-  <i class="pi pi-shopping-cart"></i>
-  <h2>Novo Pedido</h2>
-  <p>Em construção...</p>
+<p-toast></p-toast>
+
+<div class="pdv-container">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAINEL ESQUERDO — Catálogo de produtos
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="pdv-catalogo">
+
+    <!-- Filtro de categorias -->
+    <div class="categorias-bar">
+      <span class="cat-chip" [class.ativo]="categoriaSelecionada === null"
+            (click)="filtrarCategoria(null)">
+        Todos
+      </span>
+      <span class="cat-chip"
+            *ngFor="let cat of categorias; trackBy: trackByCategoria"
+            [class.ativo]="categoriaSelecionada === cat.id"
+            (click)="filtrarCategoria(cat.id!)">
+        {{ cat.nome }}
+      </span>
+    </div>
+
+    <!-- Lista de produtos agrupada por categoria -->
+    <div class="produtos-scroll">
+      <div *ngIf="loadingProdutos" class="loading-center">
+        <p-progressSpinner strokeWidth="4" [style]="{width:'48px',height:'48px'}"></p-progressSpinner>
+      </div>
+
+      <ng-container *ngIf="!loadingProdutos">
+        <div class="categoria-section"
+             *ngFor="let grupo of gruposFiltrados; trackBy: trackByGrupoFiltrado">
+          <h3 class="categoria-titulo">{{ grupo.categoria.nome }}</h3>
+          <div class="produtos-grid">
+            <div class="produto-card"
+                 *ngFor="let produto of grupo.produtos; trackBy: trackByProduto"
+                 (click)="selecionarProduto(produto)">
+              <span class="produto-nome">{{ produto.nome }}</span>
+              <span class="produto-tamanho" *ngIf="produto.tamanho">{{ produto.tamanho }}</span>
+              <span class="produto-preco">{{ formatarPreco(produto.preco) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="gruposFiltrados.length === 0" class="empty-state">
+          <i class="pi pi-inbox"></i>
+          <p>Nenhum produto encontrado</p>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PAINEL DIREITO — Resumo do pedido
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="pdv-pedido">
+    <div class="pedido-header">
+      <i class="pi pi-shopping-cart"></i>
+      <span>Pedido</span>
+    </div>
+
+    <!-- Lista de itens -->
+    <div class="pedido-itens">
+      <ng-container *ngIf="itensPedido.length > 0; else semItens">
+        <div class="item-pedido"
+             *ngFor="let item of itensPedido; trackBy: trackByItemPedido">
+          <div class="item-info">
+            <span class="item-nome">{{ item.nomeProduto }}</span>
+            <span class="item-complementos" *ngIf="item.complementos.length > 0">
+              {{ formatarComplementos(item.complementos) }}
+            </span>
+          </div>
+          <div class="item-acoes">
+            <span class="item-preco">{{ formatarPreco(item.subtotal) }}</span>
+            <button class="btn-remover" (click)="removerItem(item.uid)" pRipple>
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #semItens>
+        <div class="sem-itens">
+          <i class="pi pi-shopping-bag"></i>
+          <p>Nenhum item adicionado</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Total e botão -->
+    <div class="pedido-footer">
+      <div class="pedido-total">
+        <span>Total</span>
+        <span class="total-valor">{{ formatarPreco(totalPedido) }}</span>
+      </div>
+      <button class="btn-pagamento"
+              [disabled]="itensPedido.length === 0"
+              (click)="abrirPagamento()"
+              pRipple>
+        <i class="pi pi-wallet"></i>
+        Pagamento
+      </button>
+    </div>
+  </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL — Seleção de complementos
+════════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [(visible)]="showModalComplementos"
+  [header]="produtoAtual?.nome || 'Complementos'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="modal-complementos"
+  [style]="{width:'520px'}"
+  (onHide)="showModalComplementos = false">
+
+  <!-- Loading -->
+  <div *ngIf="loadingGrupos" class="loading-center" style="padding:2rem">
+    <p-progressSpinner strokeWidth="4" [style]="{width:'40px',height:'40px'}"></p-progressSpinner>
+  </div>
+
+  <!-- Grupos -->
+  <ng-container *ngIf="!loadingGrupos">
+    <div class="comp-grupo"
+         *ngFor="let grupo of gruposAtual; trackBy: trackByGrupo">
+      <div class="comp-grupo-header">
+        <span class="comp-grupo-nome">{{ grupo.nome }}</span>
+        <span class="comp-grupo-limite">
+          <ng-container *ngIf="grupo.limiteMin > 0">Obrigatório · </ng-container>
+          Escolha {{ grupo.limiteMax === 1 ? '1' : 'até ' + grupo.limiteMax }}
+          <span class="comp-contador" *ngIf="contadorSelecionados(grupo) > 0">
+            ({{ contadorSelecionados(grupo) }} selecionado{{ contadorSelecionados(grupo) > 1 ? 's' : '' }})
+          </span>
+        </span>
+      </div>
+
+      <div class="comp-itens">
+        <div class="comp-item"
+             *ngFor="let item of grupo.itens; trackBy: trackByItem"
+             [class.selecionado]="isItemSelecionado(grupo, item)"
+             (click)="item.ativo && toggleItem(grupo, item)"
+             [class.inativo]="!item.ativo">
+
+          <div class="comp-item-selector">
+            <!-- Radio para seleção única -->
+            <div *ngIf="isRadio(grupo)" class="radio-circle"
+                 [class.checked]="isItemSelecionado(grupo, item)">
+              <div class="radio-dot"></div>
+            </div>
+            <!-- Checkbox para seleção múltipla -->
+            <div *ngIf="!isRadio(grupo)" class="check-box"
+                 [class.checked]="isItemSelecionado(grupo, item)">
+              <i class="pi pi-check" *ngIf="isItemSelecionado(grupo, item)"></i>
+            </div>
+          </div>
+
+          <span class="comp-item-nome">{{ item.nome }}</span>
+          <span class="comp-item-preco" *ngIf="item.preco > 0">
+            + {{ formatarPreco(item.preco) }}
+          </span>
+          <span class="comp-item-gratis" *ngIf="item.preco === 0">Grátis</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template pTemplate="footer">
+    <button class="btn-cancelar" (click)="showModalComplementos = false" pRipple>
+      Cancelar
+    </button>
+    <button class="btn-adicionar"
+            [disabled]="!selecoesValidas() || loadingGrupos"
+            (click)="adicionarAoPedido()"
+            pRipple>
+      <i class="pi pi-plus"></i>
+      Adicionar ao pedido
+    </button>
+  </ng-template>
+</p-dialog>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL — Pagamento
+════════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [(visible)]="showModalPagamento"
+  header="Pagamento"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="modal-pagamento"
+  [style]="{width:'640px'}"
+  (onHide)="showModalPagamento = false">
+
+  <div class="pag-layout">
+
+    <!-- Resumo do pedido -->
+    <div class="pag-resumo">
+      <h4>Resumo</h4>
+      <div class="pag-item" *ngFor="let item of itensPedido; trackBy: trackByItemPedido">
+        <div class="pag-item-info">
+          <span class="pag-item-nome">{{ item.nomeProduto }}</span>
+          <span class="pag-item-comps" *ngIf="item.complementos.length > 0">
+            {{ formatarComplementos(item.complementos) }}
+          </span>
+        </div>
+        <span class="pag-item-preco">{{ formatarPreco(item.subtotal) }}</span>
+      </div>
+      <div class="pag-total-linha">
+        <span>Total</span>
+        <span class="pag-total-valor">{{ formatarPreco(totalPedido) }}</span>
+      </div>
+    </div>
+
+    <!-- Seleção de forma de pagamento -->
+    <div class="pag-formas">
+      <h4>Forma de pagamento</h4>
+      <div class="pag-botoes">
+        <button class="btn-forma"
+                *ngFor="let forma of formasPagamento"
+                [class.ativo]="formaPagamento === forma"
+                (click)="formaPagamento = forma"
+                pRipple>
+          <i [class]="iconFormaPagamento(forma)"></i>
+          <span>{{ labelFormaPagamento(forma) }}</span>
+        </button>
+      </div>
+
+      <!-- Campo valor pago (só para dinheiro) -->
+      <div class="pag-dinheiro" *ngIf="formaPagamento === 'DINHEIRO'">
+        <label>Valor recebido</label>
+        <p-inputNumber
+          [(ngModel)]="valorPago"
+          mode="currency"
+          currency="BRL"
+          locale="pt-BR"
+          [min]="0"
+          [style]="{width:'100%'}">
+        </p-inputNumber>
+
+        <div class="pag-troco" [class.positivo]="troco > 0">
+          <span>Troco</span>
+          <span class="troco-valor">{{ formatarPreco(troco) }}</span>
+        </div>
+      </div>
+
+      <!-- Aviso cartão/Pix -->
+      <div class="pag-aviso" *ngIf="formaPagamento !== 'DINHEIRO'">
+        <i class="pi pi-info-circle"></i>
+        <span>Confirme o pagamento de <strong>{{ formatarPreco(totalPedido) }}</strong> na maquininha.</span>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="btn-cancelar" (click)="showModalPagamento = false" pRipple>
+      Cancelar
+    </button>
+    <button class="btn-finalizar"
+            [disabled]="!podeFinalizar() || salvando"
+            (click)="finalizarPedido()"
+            pRipple>
+      <i class="pi pi-check" *ngIf="!salvando"></i>
+      <p-progressSpinner *ngIf="salvando" strokeWidth="4"
+        [style]="{width:'16px',height:'16px',marginRight:'6px'}"></p-progressSpinner>
+      {{ salvando ? 'Finalizando...' : 'Finalizar pedido' }}
+    </button>
+  </ng-template>
+</p-dialog>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL — Pedido finalizado com sucesso
+════════════════════════════════════════════════════════════════ -->
+<p-dialog
+  [(visible)]="showModalSucesso"
+  header="Pedido finalizado!"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="modal-sucesso"
+  [style]="{width:'360px'}"
+  [closable]="false">
+
+  <div class="sucesso-body">
+    <div class="sucesso-icon">
+      <i class="pi pi-check-circle"></i>
+    </div>
+    <p class="sucesso-texto">Pedido <strong>#{{ ultimoPedidoId }}</strong> registrado com sucesso!</p>
+    <div class="sucesso-troco" *ngIf="ultimoTroco > 0">
+      <span>Troco a devolver</span>
+      <span class="troco-destaque">{{ formatarPreco(ultimoTroco) }}</span>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="btn-novo-pedido" (click)="novoPedido()" pRipple>
+      <i class="pi pi-plus"></i>
+      Novo pedido
+    </button>
+  </ng-template>
+</p-dialog>
+                            

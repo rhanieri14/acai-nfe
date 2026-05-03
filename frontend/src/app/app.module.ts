@@ -15,7 +15,6 @@ import { CardapioComponent } from './pages/cardapio/cardapio.component';
 import { ProdutoCardComponent } from './pages/cardapio/produto-card/produto-card.component';
 import { HistoricoComponent } from './pages/historico/historico.component';
 import { ConfiguracoesComponent } from './pages/configuracoes/configuracoes.component';
-import { ComplementosComponent } from './pages/complementos/complementos.component';
 
 // PrimeNG Modules
 import { CardModule } from 'primeng/card';
@@ -36,6 +35,9 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { DividerModule } from 'primeng/divider';
+import { BadgeModule } from 'primeng/badge';
+import { ScrollPanelModule } from 'primeng/scrollpanel';
 
 import { MessageService, ConfirmationService } from 'primeng/api';
 
@@ -49,8 +51,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
     CardapioComponent,
     ProdutoCardComponent,
     HistoricoComponent,
-    ConfiguracoesComponent,
-    ComplementosComponent
+    ConfiguracoesComponent
   ],
   imports: [
     BrowserModule,
@@ -77,7 +78,10 @@ import { MessageService, ConfirmationService } from 'primeng/api';
     ToolbarModule,
     ConfirmDialogModule,
     TooltipModule,
-    SelectButtonModule
+    SelectButtonModule,
+    DividerModule,
+    BadgeModule,
+    ScrollPanelModule
   ],
   providers: [MessageService, ConfirmationService],
   bootstrap: [AppComponent]

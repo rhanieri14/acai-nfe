@@ -23,7 +23,6 @@ export class LayoutComponent implements OnInit {
     'novo-pedido':    'Novo Pedido',
     'pedidos-do-dia': 'Pedidos do Dia',
     'cardapio':       'Cardápio',
-    'complementos':   'Complementos',
     'historico':      'Histórico',
     'configuracoes':  'Configurações'
   };
@@ -35,9 +34,8 @@ export class LayoutComponent implements OnInit {
   ];
 
   readonly menuGestao: MenuItem[] = [
-    { label: 'Cardápio',      icon: 'pi pi-book',         route: '/cardapio' },
-    { label: 'Subprodutos',   icon: 'pi pi-star',           route: '/complementos' },
-    { label: 'Histórico',     icon: 'pi pi-history',       route: '/historico' },
+    { label: 'Cardápio',  icon: 'pi pi-book',    route: '/cardapio' },
+    { label: 'Histórico', icon: 'pi pi-history', route: '/historico' },
   ];
 
   constructor(private router: Router) {}

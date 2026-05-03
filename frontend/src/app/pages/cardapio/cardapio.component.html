@@ -19,6 +19,9 @@
       <button class="btn-secondary" (click)="abrirCopiarProdutos()">
         <i class="pi pi-copy"></i> Copiar Produtos
       </button>
+      <button class="btn-secondary" (click)="abrirLote()">
+        <i class="pi pi-bolt"></i> Grupo em Lote
+      </button>
       <button class="btn-secondary" (click)="abrirGerenciarCategorias()">
         <i class="pi pi-th-large"></i> Categorias
       </button>
@@ -88,9 +91,11 @@
           *ngFor="let produto of grupo.produtos; trackBy: trackById"
           [produto]="produto"
           [accentColor]="grupo.categoria.cor"
+          [totalGrupos]="getGruposCount(produto)"
           (editar)="abrirEditarProduto($event)"
           (excluir)="confirmarExclusaoProduto($event)"
-          (toggleAtivo)="onToggleAtivo($event)">
+          (toggleAtivo)="onToggleAtivo($event)"
+          (gerenciarGrupos)="abrirGrupos($event)">
         </app-produto-card>
       </div>
     </section>
@@ -301,6 +306,342 @@
         {{ copiando ? 'Copiando...' : 'Copiar Produtos' }}
       </button>
     </div>
+  </div>
+</p-dialog>
+
+<!-- ══════════════ Dialog Grupos de Complementos ══════════════ -->
+<p-dialog [(visible)]="dialogGrupos" [modal]="true" [style]="{ width: '680px' }"
+          [draggable]="false" [resizable]="false" styleClass="produto-dialog" [showHeader]="false">
+  <div class="dialog-inner">
+
+    <!-- Cabeçalho -->
+    <div class="dialog-head">
+      <div class="dialog-head-icon" style="background:#f0fdf4">
+        <i class="pi pi-th-large" style="color:#16a34a"></i>
+      </div>
+      <div>
+        <h2>Grupos de Complementos</h2>
+        <p>{{ produtoAtualGrupos?.nome }}<span *ngIf="produtoAtualGrupos?.tamanho"> {{ produtoAtualGrupos?.tamanho }}</span></p>
+      </div>
+      <button class="dialog-close" (click)="dialogGrupos = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <!-- Loading -->
+    <div class="grupos-loading" *ngIf="loadingGrupos">
+      <p-progressSpinner strokeWidth="3" styleClass="spinner-sm"></p-progressSpinner>
+    </div>
+
+    <div class="grupos-body" *ngIf="!loadingGrupos">
+
+      <!-- Chips de grupos -->
+      <div class="grupos-chips">
+        <button *ngFor="let g of gruposDoProduto; trackBy: trackByGrupo"
+                class="grupo-chip"
+                [class.grupo-chip-ativo]="grupoAtivo?.id === g.id"
+                (click)="selecionarGrupo(g)">
+          {{ g.nome }}
+          <span class="grupo-chip-count">{{ g.itens.length }}</span>
+        </button>
+        <button class="grupo-chip grupo-chip-add" (click)="abrirPainelAddGrupo()">
+          <i class="pi pi-plus"></i> Adicionar
+        </button>
+      </div>
+
+      <!-- Painel: Adicionar grupo -->
+      <div class="painel-add-grupo" *ngIf="painelAddGrupo">
+        <div class="painel-add-tabs">
+          <button class="painel-tab" [class.ativo]="addGrupoModo === 'novo'"   (click)="addGrupoModo = 'novo'">Criar novo</button>
+          <button class="painel-tab" [class.ativo]="addGrupoModo === 'existente'" (click)="addGrupoModo = 'existente'">Usar existente</button>
+        </div>
+
+        <ng-container *ngIf="addGrupoModo === 'novo'">
+          <div class="painel-add-form">
+            <div class="dfield" style="flex:2">
+              <label class="dlabel">Nome do grupo <span class="req">*</span></label>
+              <input pInputText class="dinput" placeholder="Ex: ACOMPANHAMENTOS" [(ngModel)]="addGrupoNome" />
+            </div>
+            <div class="dfield" style="flex:1">
+              <label class="dlabel">Mín. seleção</label>
+              <p-inputNumber [(ngModel)]="addGrupoMin" [min]="0" [max]="99" styleClass="dinput-number"></p-inputNumber>
+            </div>
+            <div class="dfield" style="flex:1">
+              <label class="dlabel">Máx. seleção</label>
+              <p-inputNumber [(ngModel)]="addGrupoMax" [min]="0" [max]="99" styleClass="dinput-number"></p-inputNumber>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="addGrupoModo === 'existente'">
+          <div class="painel-add-form">
+            <div class="dfield" style="flex:1">
+              <label class="dlabel">Selecione o grupo <span class="req">*</span></label>
+              <p-dropdown [(ngModel)]="addGrupoExistenteId"
+                          [options]="gruposDisponiveis"
+                          optionLabel="nome" optionValue="id"
+                          placeholder="Selecione..."
+                          styleClass="dinput-dropdown"
+                          [emptyMessage]="'Nenhum grupo disponível'">
+              </p-dropdown>
+            </div>
+          </div>
+          <div class="painel-add-hint" *ngIf="gruposDisponiveis.length === 0">
+            <i class="pi pi-info-circle"></i> Todos os grupos existentes já estão adicionados a este produto.
+          </div>
+        </ng-container>
+
+        <div class="painel-add-actions">
+          <button class="dbtn dbtn-ghost" (click)="painelAddGrupo = false">Cancelar</button>
+          <button class="dbtn dbtn-primary" (click)="confirmarAddGrupo()" [disabled]="salvandoGrupo">
+            <i [class]="salvandoGrupo ? 'pi pi-spin pi-spinner' : 'pi pi-plus'"></i>
+            {{ salvandoGrupo ? 'Salvando...' : (addGrupoModo === 'novo' ? 'Criar e Adicionar' : 'Adicionar') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Sem grupos -->
+      <div class="grupos-empty" *ngIf="gruposDoProduto.length === 0 && !painelAddGrupo">
+        <i class="pi pi-th-large"></i>
+        <p>Nenhum grupo de complementos</p>
+        <button class="dbtn dbtn-primary" (click)="abrirPainelAddGrupo()">
+          <i class="pi pi-plus"></i> Adicionar grupo
+        </button>
+      </div>
+
+      <!-- Detalhe do grupo selecionado -->
+      <div class="grupo-detalhe" *ngIf="grupoAtivo && !painelAddGrupo">
+
+        <!-- Aviso compartilhamento -->
+        <div class="grupo-aviso">
+          <i class="pi pi-exclamation-triangle"></i>
+          Alterações aqui afetam <strong>todos os produtos</strong> que utilizam o grupo "{{ grupoAtivo.nome }}".
+        </div>
+
+        <!-- Metadados -->
+        <div class="grupo-meta">
+          <div class="dfield" style="flex:2">
+            <label class="dlabel">Nome do grupo</label>
+            <input pInputText class="dinput" [(ngModel)]="grupoEditNome" />
+          </div>
+          <div class="dfield" style="flex:1">
+            <label class="dlabel">Limite mínimo</label>
+            <div class="limit-spin">
+              <button class="spin-btn" (click)="grupoEditMin = grupoEditMin > 0 ? grupoEditMin - 1 : 0">
+                <i class="pi pi-minus"></i>
+              </button>
+              <span class="spin-val">{{ grupoEditMin }}</span>
+              <button class="spin-btn" (click)="grupoEditMin = grupoEditMin + 1">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="dfield" style="flex:1">
+            <label class="dlabel">Limite máximo</label>
+            <div class="limit-spin">
+              <button class="spin-btn" (click)="grupoEditMax = grupoEditMax > 0 ? grupoEditMax - 1 : 0">
+                <i class="pi pi-minus"></i>
+              </button>
+              <span class="spin-val">{{ grupoEditMax }}</span>
+              <button class="spin-btn" (click)="grupoEditMax = grupoEditMax + 1">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+          </div>
+          <button class="dbtn dbtn-primary" style="align-self:flex-end; white-space:nowrap"
+                  (click)="salvarMetadadosGrupo()">
+            <i class="pi pi-check"></i> Salvar
+          </button>
+        </div>
+
+        <!-- Lista de itens -->
+        <div class="itens-header">
+          <span class="itens-title">Itens: <strong>{{ grupoAtivo.itens.length }}</strong></span>
+          <button class="btn-add-item" (click)="iniciarAddItem()" *ngIf="!adicionandoItem">
+            <i class="pi pi-plus"></i> Adicionar item
+          </button>
+        </div>
+
+        <!-- Linha de adicionar item -->
+        <div class="item-row item-row-new" *ngIf="adicionandoItem">
+          <input pInputText class="dinput item-nome-input" placeholder="Nome do item"
+                 [(ngModel)]="novoItemNome" (keyup.enter)="confirmarAddItem()" />
+          <p-inputNumber [(ngModel)]="novoItemPreco" mode="currency" currency="BRL"
+                         locale="pt-BR" [minFractionDigits]="2" styleClass="dinput-number item-preco-input">
+          </p-inputNumber>
+          <button class="spin-btn spin-btn-confirm" (click)="confirmarAddItem()" pTooltip="Confirmar">
+            <i class="pi pi-check"></i>
+          </button>
+          <button class="spin-btn" (click)="cancelarAddItem()" pTooltip="Cancelar">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <!-- Itens existentes -->
+        <div class="itens-lista">
+          <div *ngFor="let item of grupoAtivo.itens; trackBy: trackByItem" class="item-row">
+
+            <!-- Modo edição -->
+            <ng-container *ngIf="itemEditandoId === item.id; else modoView">
+              <input pInputText class="dinput item-nome-input" [(ngModel)]="itemEditandoNome"
+                     (keyup.enter)="confirmarEditItem()" />
+              <p-inputNumber [(ngModel)]="itemEditandoPreco" mode="currency" currency="BRL"
+                             locale="pt-BR" [minFractionDigits]="2" styleClass="dinput-number item-preco-input">
+              </p-inputNumber>
+              <button class="spin-btn spin-btn-confirm" (click)="confirmarEditItem()" pTooltip="Confirmar">
+                <i class="pi pi-check"></i>
+              </button>
+              <button class="spin-btn" (click)="cancelarEditItem()" pTooltip="Cancelar">
+                <i class="pi pi-times"></i>
+              </button>
+            </ng-container>
+
+            <!-- Modo visualização -->
+            <ng-template #modoView>
+              <span class="item-nome">{{ item.nome }}</span>
+              <span class="item-preco" [class.item-preco-gratis]="!item.preco || item.preco === 0">
+                {{ formatarPrecoItem(item.preco) }}
+              </span>
+              <div class="item-acoes">
+                <button class="spin-btn" (click)="iniciarEditItem(item)" pTooltip="Editar">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button class="spin-btn spin-btn-danger" (click)="confirmarExcluirItem(item)" pTooltip="Excluir">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </ng-template>
+
+          </div>
+
+          <div class="itens-empty" *ngIf="grupoAtivo.itens.length === 0 && !adicionandoItem">
+            <i class="pi pi-inbox"></i> Nenhum item cadastrado
+          </div>
+        </div>
+
+        <!-- Rodapé do grupo -->
+        <div class="grupo-detalhe-footer">
+          <button class="dbtn dbtn-danger" (click)="confirmarRemoverGrupoDoProduto()">
+            <i class="pi pi-minus-circle"></i> Remover grupo deste produto
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button class="dbtn dbtn-ghost" (click)="dialogGrupos = false">Fechar</button>
+    </div>
+
+  </div>
+</p-dialog>
+
+<!-- ══════════════ Dialog Aplicar Grupo em Lote ══════════════ -->
+<p-dialog [(visible)]="dialogLote" [modal]="true" [style]="{ width: '560px' }"
+          [draggable]="false" [resizable]="false" styleClass="produto-dialog" [showHeader]="false">
+  <div class="dialog-inner">
+
+    <div class="dialog-head">
+      <div class="dialog-head-icon" style="background:#fffbeb">
+        <i class="pi pi-bolt" style="color:#d97706"></i>
+      </div>
+      <div>
+        <h2>Aplicar Grupo em Lote</h2>
+        <p>Adicione um grupo de complementos a vários produtos de uma vez</p>
+      </div>
+      <button class="dialog-close" (click)="dialogLote = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="dialog-form" style="gap:20px">
+
+      <!-- Passo 1: escolher grupo -->
+      <div class="dfield">
+        <label class="dlabel">1. Qual grupo você quer aplicar? <span class="req">*</span></label>
+        <p-dropdown [(ngModel)]="loteGrupoId"
+                    [options]="todosOsGrupos"
+                    optionLabel="nome" optionValue="id"
+                    placeholder="Selecione um grupo existente..."
+                    styleClass="dinput-dropdown"
+                    [emptyMessage]="'Nenhum grupo cadastrado'">
+          <ng-template pTemplate="item" let-g>
+            <span style="display:flex; align-items:center; gap:10px">
+              <span style="font-weight:600">{{ g.nome }}</span>
+              <span style="font-size:0.75rem; color:#9ca3af">{{ g.itens.length }} iten(s) · min {{ g.limiteMin }} / max {{ g.limiteMax }}</span>
+            </span>
+          </ng-template>
+        </p-dropdown>
+      </div>
+
+      <!-- Passo 2: filtro de categoria -->
+      <div class="dfield" *ngIf="loteGrupoId">
+        <label class="dlabel">2. Selecione os produtos</label>
+        <div class="lote-cat-chips">
+          <button class="chip" [class.chip-ativo]="loteCategoriafiltro === null"
+                  [style.--chip-color]="'#6B2D5C'"
+                  (click)="loteCategoriafiltro = null">Todas</button>
+          <button *ngFor="let g of grupos; trackBy: trackByProdutoGroup"
+                  class="chip"
+                  [class.chip-ativo]="loteCategoriafiltro === g.categoria.id"
+                  [style.--chip-color]="g.categoria.cor"
+                  (click)="loteCategoriafiltro = g.categoria.id!">
+            <i [class]="g.categoria.icone"></i> {{ g.categoria.nome }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de produtos com checkboxes -->
+      <div class="lote-lista" *ngIf="loteGrupoId">
+
+        <!-- Selecionar todos -->
+        <div class="lote-selecionar-todos" (click)="toggleLoteTodos()">
+          <div class="lote-check" [class.lote-check-on]="todosLoteSelecionados">
+            <i class="pi pi-check" *ngIf="todosLoteSelecionados"></i>
+          </div>
+          <span>{{ todosLoteSelecionados ? 'Desmarcar todos' : 'Selecionar todos' }}</span>
+          <span class="lote-count-badge">{{ loteSelecionados.size }} selecionado(s)</span>
+        </div>
+
+        <div class="lote-scroll">
+          <ng-container *ngFor="let grupo of grupos; trackBy: trackByProdutoGroup">
+            <ng-container *ngIf="loteCategoriafiltro === null || loteCategoriafiltro === grupo.categoria.id">
+
+              <!-- Cabeçalho de categoria -->
+              <div class="lote-cat-header" [style.--cat-color]="grupo.categoria.cor">
+                <span class="lote-cat-icon"><i [class]="grupo.categoria.icone"></i></span>
+                <span>{{ grupo.categoria.nome }}</span>
+              </div>
+
+              <!-- Produtos da categoria -->
+              <div *ngFor="let produto of grupo.produtos; trackBy: trackById"
+                   class="lote-produto-row"
+                   [class.lote-produto-selecionado]="loteSelecionados.has(produto.id!)"
+                   (click)="toggleLoteProduto(produto.id!)">
+                <div class="lote-check" [class.lote-check-on]="loteSelecionados.has(produto.id!)">
+                  <i class="pi pi-check" *ngIf="loteSelecionados.has(produto.id!)"></i>
+                </div>
+                <span class="lote-prod-nome">{{ produto.nome }}<span *ngIf="produto.tamanho" class="lote-prod-tam"> {{ produto.tamanho }}</span></span>
+                <span class="lote-prod-preco">{{ produto.preco > 0 ? (produto.preco | currency:'BRL':'symbol':'1.2-2') : 'A definir' }}</span>
+              </div>
+
+            </ng-container>
+          </ng-container>
+
+          <div class="lote-empty" *ngIf="produtosParaLote.length === 0">
+            <i class="pi pi-inbox"></i> Nenhum produto encontrado
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dialog-footer">
+      <button class="dbtn dbtn-ghost" (click)="dialogLote = false">Cancelar</button>
+      <button class="dbtn dbtn-primary"
+              [disabled]="!loteGrupoId || loteSelecionados.size === 0 || aplicandoLote"
+              (click)="confirmarLote()">
+        <i [class]="aplicandoLote ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"></i>
+        {{ aplicandoLote ? 'Aplicando...' : 'Aplicar em ' + loteSelecionados.size + ' produto(s)' }}
+      </button>
+    </div>
+
   </div>
 </p-dialog>
 

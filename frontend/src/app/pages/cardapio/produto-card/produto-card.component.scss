@@ -121,7 +121,38 @@
   gap: 2px;
 }
 
+// Badge de grupos no botão
+.grupos-badge-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grupos-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--accent, #6B2D5C);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 ::ng-deep {
+  .btn-grupos.p-button {
+    color: #9ca3af !important;
+    width: 30px; height: 30px;
+    &:hover { color: var(--accent, #6B2D5C) !important; background: color-mix(in srgb, var(--accent, #6B2D5C) 8%, transparent) !important; }
+  }
   .btn-edit.p-button {
     color: #6b7280 !important;
     width: 30px; height: 30px;

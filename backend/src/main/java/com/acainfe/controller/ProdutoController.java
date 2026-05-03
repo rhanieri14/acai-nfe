@@ -1,7 +1,9 @@
 package com.acainfe.controller;
 
 import com.acainfe.dto.CopiarProdutosDTO;
+import com.acainfe.dto.GrupoComplementoDTO;
 import com.acainfe.dto.ProdutoDTO;
+import com.acainfe.service.GrupoComplementoService;
 import com.acainfe.service.ProdutoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,7 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProdutoController {
 
-    private final ProdutoService produtoService;
+    private final ProdutoService          produtoService;
+    private final GrupoComplementoService grupoService;
 
     @GetMapping
     public ResponseEntity<List<ProdutoDTO>> listar(
@@ -76,5 +80,24 @@ public class ProdutoController {
                 "mensagem", quantidade + " produto(s) copiado(s) com sucesso!",
                 "quantidade", quantidade
         ));
+    }
+
+    // ── Grupos de complementos do produto ─────────────────────────────────────
+
+    @GetMapping("/{id}/grupos")
+    public ResponseEntity<List<GrupoComplementoDTO>> listarGrupos(@PathVariable Long id) {
+        return ResponseEntity.ok(grupoService.listarGruposDoProduto(id));
+    }
+
+    @PostMapping("/{id}/grupos/{grupoId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void adicionarGrupo(@PathVariable Long id, @PathVariable Long grupoId) {
+        grupoService.adicionarGrupoAoProduto(id, grupoId);
+    }
+
+    @DeleteMapping("/{id}/grupos/{grupoId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removerGrupo(@PathVariable Long id, @PathVariable Long grupoId) {
+        grupoService.removerGrupoDoProduto(id, grupoId);
     }
 }

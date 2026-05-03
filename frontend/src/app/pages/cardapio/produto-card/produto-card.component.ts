@@ -12,9 +12,12 @@ export class ProdutoCardComponent {
   @Input({ required: true }) produto!: Produto;
   @Input() accentColor = '#6B2D5C';
 
-  @Output() editar       = new EventEmitter<Produto>();
-  @Output() excluir      = new EventEmitter<Produto>();
-  @Output() toggleAtivo  = new EventEmitter<Produto>();
+  @Output() editar           = new EventEmitter<Produto>();
+  @Output() excluir          = new EventEmitter<Produto>();
+  @Output() toggleAtivo      = new EventEmitter<Produto>();
+  @Output() gerenciarGrupos  = new EventEmitter<Produto>();
+
+  @Input() totalGrupos = 0;
 
   get precoFormatado(): string {
     if (!this.produto.preco || this.produto.preco === 0) return 'A definir';

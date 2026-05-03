@@ -7,7 +7,6 @@ import { PedidosDoDiaComponent } from './pages/pedidos-do-dia/pedidos-do-dia.com
 import { CardapioComponent } from './pages/cardapio/cardapio.component';
 import { HistoricoComponent } from './pages/historico/historico.component';
 import { ConfiguracoesComponent } from './pages/configuracoes/configuracoes.component';
-import { ComplementosComponent } from './pages/complementos/complementos.component';
 
 const routes: Routes = [
   {
@@ -19,7 +18,6 @@ const routes: Routes = [
       { path: 'novo-pedido', component: NovoPedidoComponent },
       { path: 'pedidos-do-dia', component: PedidosDoDiaComponent },
       { path: 'cardapio', component: CardapioComponent },
-      { path: 'complementos', component: ComplementosComponent },
       { path: 'historico', component: HistoricoComponent },
       { path: 'configuracoes', component: ConfiguracoesComponent }
     ]

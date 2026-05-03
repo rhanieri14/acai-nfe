@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "produtos")
@@ -41,4 +43,17 @@ public class Produto {
     @Column(nullable = false)
     @Builder.Default
     private int ordem = 0;
+
+    /** Grupos de complementos associados a este produto (ManyToMany compartilhado) */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "produto_grupos",
+            joinColumns = @JoinColumn(name = "produto_id"),
+            inverseJoinColumns = @JoinColumn(name = "grupo_id")
+    )
+    @OrderBy("ordem ASC, nome ASC")
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<GrupoComplemento> grupos = new ArrayList<>();
 }
