@@ -1,0 +1,279 @@
+<p-toast></p-toast>
+
+<div class="config-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-icon">
+      <i class="pi pi-cog"></i>
+    </div>
+    <div>
+      <h1>Configurações da Empresa</h1>
+      <p class="header-sub">Gerencie os dados cadastrais, fiscais e de emissão de notas</p>
+    </div>
+  </div>
+
+  <form [formGroup]="formulario">
+    <p-tabView styleClass="config-tabs">
+
+      <!-- ══════════════ TAB 1: DADOS DA EMPRESA ══════════════ -->
+      <p-tabPanel leftIcon="pi pi-building" header="Dados da Empresa">
+
+        <div class="section-card">
+          <div class="section-title">
+            <i class="pi pi-id-card"></i> Identificação
+          </div>
+          <div class="fgrid">
+            <div class="ffield fg-full">
+              <label class="flabel">Razão Social <span class="req">*</span></label>
+              <input pInputText formControlName="razaoSocial" class="finput"
+                     placeholder="Ex: Maria Magalhães Comércio de Alimentos LTDA" />
+            </div>
+            <div class="ffield fg-full">
+              <label class="flabel">Nome Fantasia <span class="req">*</span></label>
+              <input pInputText formControlName="nomeFantasia" class="finput"
+                     placeholder="Ex: UN Refresco" />
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">CNPJ</label>
+              <p-inputMask formControlName="cnpj" mask="99.999.999/9999-99"
+                           placeholder="00.000.000/0000-00" styleClass="finput-mask"></p-inputMask>
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">Inscrição Estadual</label>
+              <input pInputText formControlName="inscricaoEstadual" class="finput"
+                     placeholder="Ex: 0808365400161" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">
+            <i class="pi pi-phone"></i> Contato
+          </div>
+          <div class="fgrid">
+            <div class="ffield fg-half">
+              <label class="flabel">Telefone</label>
+              <p-inputMask formControlName="telefone" mask="(99) 99999-9999"
+                           placeholder="(61) 99999-9999" styleClass="finput-mask"></p-inputMask>
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">E-mail</label>
+              <input pInputText formControlName="email" type="email" class="finput"
+                     placeholder="contato@empresa.com.br" />
+            </div>
+          </div>
+        </div>
+
+      </p-tabPanel>
+
+      <!-- ══════════════ TAB 2: ENDEREÇO ══════════════ -->
+      <p-tabPanel leftIcon="pi pi-map-marker" header="Endereço">
+
+        <div class="section-card">
+          <div class="section-title">
+            <i class="pi pi-map"></i> Localização
+          </div>
+          <div class="fgrid">
+
+            <div class="ffield fg-quarter">
+              <label class="flabel">CEP</label>
+              <div class="cep-wrap">
+                <input pInputText formControlName="cep" class="finput"
+                       placeholder="00000-000" (blur)="buscarCep()" />
+                <div class="cep-spinner" *ngIf="buscandoCep">
+                  <i class="pi pi-spin pi-spinner"></i>
+                </div>
+              </div>
+              <span class="fhint">Preencha para buscar o endereço</span>
+            </div>
+
+            <div class="ffield fg-three-quarters">
+              <label class="flabel">Logradouro</label>
+              <input pInputText formControlName="logradouro" class="finput readonly"
+                     placeholder="Preenchido automaticamente" readonly />
+            </div>
+
+            <div class="ffield fg-quarter">
+              <label class="flabel">Número</label>
+              <input pInputText formControlName="numero" class="finput" placeholder="02" />
+            </div>
+
+            <div class="ffield fg-three-quarters">
+              <label class="flabel">Complemento</label>
+              <input pInputText formControlName="complemento" class="finput" placeholder="Ex: Loja 02, Bloco A" />
+            </div>
+
+            <div class="ffield fg-half">
+              <label class="flabel">Bairro</label>
+              <input pInputText formControlName="bairro" class="finput readonly"
+                     placeholder="Preenchido automaticamente" readonly />
+            </div>
+
+            <div class="ffield fg-half">
+              <label class="flabel">Município</label>
+              <input pInputText formControlName="municipio" class="finput readonly"
+                     placeholder="Preenchido automaticamente" readonly />
+            </div>
+
+            <div class="ffield fg-quarter">
+              <label class="flabel">UF</label>
+              <input pInputText formControlName="uf" class="finput readonly"
+                     placeholder="DF" readonly />
+            </div>
+
+            <div class="ffield fg-three-quarters">
+              <label class="flabel">Código IBGE</label>
+              <input pInputText formControlName="codigoIbge" class="finput readonly"
+                     placeholder="Preenchido automaticamente" readonly />
+            </div>
+
+          </div>
+        </div>
+
+      </p-tabPanel>
+
+      <!-- ══════════════ TAB 3: NOTA FISCAL ══════════════ -->
+      <p-tabPanel leftIcon="pi pi-file" header="Nota Fiscal">
+
+        <!-- Toggle emissão -->
+        <div class="ftoggle-card">
+          <div class="ftoggle-info">
+            <i class="pi pi-file-edit toggle-icon"></i>
+            <div>
+              <span class="ftoggle-title">Habilitar Emissão de Notas Fiscais</span>
+              <span class="ftoggle-sub">Ativa a geração de NFC-e ao finalizar pedidos</span>
+            </div>
+          </div>
+          <p-inputSwitch formControlName="habilitarEmissao"></p-inputSwitch>
+        </div>
+
+        <!-- Alerta produção -->
+        <div class="alert-producao" *ngIf="ambienteProducao">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div>
+            <strong>Ambiente de PRODUÇÃO ativo</strong>
+            <span>As notas emitidas terão validade fiscal real.</span>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title"><i class="pi pi-shield"></i> Certificado e Ambiente</div>
+          <div class="fgrid">
+            <div class="ffield fg-half">
+              <label class="flabel">Certificado Digital</label>
+              <input pInputText formControlName="certificadoDigital" class="finput"
+                     placeholder="Nome/referência do arquivo .pfx" />
+            </div>
+            <div class="ffield fg-quarter">
+              <label class="flabel">Versão QR Code</label>
+              <p-dropdown formControlName="versaoQrCode" [options]="versaoQrCodeOptions"
+                          optionLabel="label" optionValue="value" styleClass="finput-dd"></p-dropdown>
+            </div>
+            <div class="ffield fg-quarter">
+              <label class="flabel">Ambiente</label>
+              <p-dropdown formControlName="ambiente" [options]="ambienteOptions"
+                          optionLabel="label" optionValue="value" styleClass="finput-dd"></p-dropdown>
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">Regime Tributário</label>
+              <p-dropdown formControlName="regimeTributario" [options]="regimeTributarioOptions"
+                          optionLabel="label" optionValue="value" styleClass="finput-dd"></p-dropdown>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title"><i class="pi pi-key"></i> CSC — Código de Segurança do Contribuinte</div>
+          <div class="fgrid">
+            <div class="ffield fg-quarter">
+              <label class="flabel">ID CSC</label>
+              <input pInputText formControlName="idCsc" class="finput" placeholder="Ex: 2" />
+            </div>
+            <div class="ffield fg-three-quarters">
+              <label class="flabel">CSC</label>
+              <input pInputText formControlName="csc" class="finput"
+                     placeholder="Ex: BFCD39B4D0C4DF69F1867C631ED0FD1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title"><i class="pi pi-hashtag"></i> Numeração das Notas</div>
+          <div class="fgrid">
+            <div class="ffield fg-quarter">
+              <label class="flabel">Série NFC-e</label>
+              <p-inputNumber formControlName="serieNfce" [useGrouping]="false" styleClass="finput-num"></p-inputNumber>
+            </div>
+            <div class="ffield fg-quarter">
+              <label class="flabel">Último Nº NFC-e</label>
+              <p-inputNumber formControlName="ultimoNumeroNfce" [useGrouping]="false" styleClass="finput-num"></p-inputNumber>
+            </div>
+            <div class="ffield fg-quarter">
+              <label class="flabel">Série NF-e</label>
+              <p-inputNumber formControlName="serieNfe" [useGrouping]="false" styleClass="finput-num"></p-inputNumber>
+            </div>
+            <div class="ffield fg-quarter">
+              <label class="flabel">Último Nº NF-e</label>
+              <p-inputNumber formControlName="ultimoNumeroNfe" [useGrouping]="false" styleClass="finput-num"></p-inputNumber>
+            </div>
+          </div>
+        </div>
+
+      </p-tabPanel>
+
+      <!-- ══════════════ TAB 4: CONFIGURAÇÃO FISCAL ══════════════ -->
+      <p-tabPanel leftIcon="pi pi-sliders-h" header="Fiscal Padrão">
+
+        <div class="section-card">
+          <div class="section-title"><i class="pi pi-percentage"></i> ICMS</div>
+          <div class="fgrid">
+            <div class="ffield fg-full">
+              <label class="flabel">CSOSN ICMS</label>
+              <p-dropdown formControlName="csosnIcms" [options]="csosnIcmsOptions"
+                          optionLabel="label" optionValue="value" styleClass="finput-dd"></p-dropdown>
+              <span class="fhint">Código de Situação da Operação do Simples Nacional</span>
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">Redução Base de Cálculo Efetiva</label>
+              <p-inputNumber formControlName="reducaoBaseCalculo"
+                             [minFractionDigits]="2" [maxFractionDigits]="2"
+                             suffix="%" styleClass="finput-num"></p-inputNumber>
+            </div>
+            <div class="ffield fg-half">
+              <label class="flabel">Alíquota ICMS Efetiva</label>
+              <p-inputNumber formControlName="aliquotaIcmsEfetiva"
+                             [minFractionDigits]="2" [maxFractionDigits]="2"
+                             suffix="%" styleClass="finput-num"></p-inputNumber>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title"><i class="pi pi-book"></i> PIS / COFINS</div>
+          <div class="fgrid">
+            <div class="ffield fg-full">
+              <label class="flabel">CST PIS/COFINS</label>
+              <p-dropdown formControlName="cstPisCofins" [options]="cstPisCofinsOptions"
+                          optionLabel="label" optionValue="value" styleClass="finput-dd"></p-dropdown>
+            </div>
+          </div>
+        </div>
+
+      </p-tabPanel>
+
+    </p-tabView>
+  </form>
+
+  <!-- Rodapé -->
+  <div class="config-footer">
+    <button class="fbtn fbtn-ghost" type="button" (click)="formulario.reset()">
+      <i class="pi pi-refresh"></i> Restaurar
+    </button>
+    <button class="fbtn fbtn-primary" type="button" (click)="salvar()" [disabled]="carregando">
+      <i [class]="carregando ? 'pi pi-spin pi-spinner' : 'pi pi-save'"></i>
+      {{ carregando ? 'Salvando...' : 'Salvar Configurações' }}
+    </button>
+  </div>
+
+</div>

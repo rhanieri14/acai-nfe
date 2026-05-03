@@ -1,0 +1,228 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="page-wrap">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>Subprodutos</h1>
+      <p>Categoria → Produto → Subproduto</p>
+    </div>
+
+    <div class="header-stats">
+      <div class="stat-chip">
+        <i class="pi pi-list"></i>{{ totalComplementos }} total
+      </div>
+      <div class="stat-chip active">
+        <i class="pi pi-check-circle"></i>{{ totalAtivos }} ativos
+      </div>
+    </div>
+
+    <p-button label="Novo Subproduto" icon="pi pi-plus"
+              styleClass="p-button-sm"
+              (onClick)="abrirNovo()"></p-button>
+  </div>
+
+  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="loading" style="text-align:center;padding:48px">
+    <p-progressSpinner styleClass="w-4rem h-4rem"></p-progressSpinner>
+  </div>
+
+  <!-- ── Grupos Categoria ─────────────────────────────────────────────────── -->
+  <ng-container *ngIf="!loading">
+
+    <div class="cat-section" *ngFor="let cg of grupos; trackBy: trackByCat"
+         [style.--cat-color]="cg.categoria.cor">
+
+      <!-- Cabeçalho da Categoria -->
+      <div class="cat-header">
+        <div class="cat-icon">
+          <i [class]="cg.categoria.icone"></i>
+        </div>
+        <h2>{{ cg.categoria.nome }}</h2>
+        <span class="cat-count">{{ cg.produtoGroups.length }} produto(s)</span>
+      </div>
+
+      <!-- Grupos Produto -->
+      <div class="prod-section" *ngFor="let pg of cg.produtoGroups; trackBy: trackByProd">
+
+        <!-- Header do Produto -->
+        <div class="prod-header">
+          <div class="prod-info">
+            <i class="pi pi-box prod-icon"></i>
+            <span class="prod-nome">
+              {{ pg.produto.nome }}<ng-container *ngIf="pg.produto.tamanho"> — {{ pg.produto.tamanho }}</ng-container>
+            </span>
+            <span class="prod-preco">R$ {{ pg.produto.preco | number:'1.2-2' }}</span>
+          </div>
+          <div class="prod-actions">
+            <span class="prod-count">{{ pg.complementos.length }} subproduto(s)</span>
+            <p-button icon="pi pi-plus" label="Adicionar"
+                      styleClass="p-button-text p-button-sm"
+                      (onClick)="abrirNovo(pg.produto)"></p-button>
+          </div>
+        </div>
+
+        <!-- Cards de subprodutos -->
+        <div class="cards-grid" *ngIf="pg.complementos.length > 0">
+          <div class="comp-card" *ngFor="let c of pg.complementos; trackBy: trackById"
+               [class.inativo]="!c.ativo"
+               [style.--tipo-cor]="tipoConfig[c.tipo].cor">
+
+            <div class="card-top">
+              <span class="tipo-badge" [style.background]="tipoConfig[c.tipo].cor">
+                <i [class]="tipoConfig[c.tipo].icone"></i>
+                {{ tipoConfig[c.tipo].label }}
+              </span>
+              <span class="card-preco">+R$ {{ c.precoExtra | number:'1.2-2' }}</span>
+            </div>
+
+            <div class="card-nome">{{ c.nome }}</div>
+
+            <div class="card-actions">
+              <p-button icon="pi pi-pencil" styleClass="p-button-text p-button-sm"
+                        pTooltip="Editar" tooltipPosition="top"
+                        (onClick)="abrirEditar(c)"></p-button>
+              <p-button [icon]="c.ativo ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                        styleClass="p-button-text p-button-sm"
+                        [pTooltip]="c.ativo ? 'Desativar' : 'Ativar'" tooltipPosition="top"
+                        (onClick)="onToggleAtivo(c)"></p-button>
+              <p-button icon="pi pi-trash" styleClass="p-button-text p-button-sm p-button-danger"
+                        pTooltip="Excluir" tooltipPosition="top"
+                        (onClick)="confirmarExclusao(c)"></p-button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="pg.complementos.length === 0" class="prod-empty">
+          Nenhum subproduto. <a (click)="abrirNovo(pg.produto)">Adicionar</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state global -->
+    <div *ngIf="grupos.length === 0"
+         style="text-align:center;padding:64px;color:#94a3b8">
+      <i class="pi pi-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px"></i>
+      Nenhum subproduto cadastrado. Clique em "Novo Subproduto" para começar.
+    </div>
+
+  </ng-container>
+
+</div>
+
+<!-- ── Dialog Subproduto ─────────────────────────────────────────────────────── -->
+<p-dialog [(visible)]="dialogComplemento"
+          styleClass="subproduto-dialog"
+          [showHeader]="false"
+          [modal]="true"
+          [closable]="false"
+          [style]="{ width: '480px' }">
+
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="dh-icon">
+      <i class="pi pi-box"></i>
+    </div>
+    <h3>{{ editando ? 'Editar Subproduto' : 'Novo Subproduto' }}</h3>
+    <p-button icon="pi pi-times" styleClass="p-button-text p-button-sm"
+              (onClick)="dialogComplemento = false"></p-button>
+  </div>
+
+  <!-- Body -->
+  <div class="dialog-body">
+    <form [formGroup]="form" class="fform-section">
+
+      <!-- Nome -->
+      <div class="fcol fcol-full">
+        <label class="flabel">Nome *</label>
+        <input pInputText formControlName="nome" class="finput"
+               placeholder="Ex: Granola, Mel, Sorvete…"
+               [class.ng-invalid]="isInvalid('nome')"
+               [class.ng-touched]="isInvalid('nome')" />
+        <small class="ferror" *ngIf="isInvalid('nome')">Nome é obrigatório</small>
+      </div>
+
+      <!-- Tipo + Preço -->
+      <div class="frow">
+        <div class="fcol fcol-half">
+          <label class="flabel">Tipo *</label>
+          <div class="finput-dd">
+            <p-dropdown formControlName="tipo" [options]="tipoOpcoes"
+                        optionLabel="label" optionValue="value"
+                        placeholder="Tipo"></p-dropdown>
+          </div>
+        </div>
+        <div class="fcol fcol-half">
+          <label class="flabel">Preço Extra (R$) *</label>
+          <p-inputNumber formControlName="precoExtra"
+                         mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2"
+                         [min]="0" inputStyleClass="finput"
+                         styleClass="w-full"></p-inputNumber>
+        </div>
+      </div>
+
+      <!-- Separator -->
+      <div class="fsep">
+        <span>Produto vinculado</span>
+      </div>
+
+      <!-- Categoria filtro -->
+      <div class="fcol fcol-full">
+        <label class="flabel">Categoria <span class="fopt">(filtra produtos)</span></label>
+        <div class="finput-dd">
+          <p-dropdown formControlName="categoriaFiltroId"
+                      [options]="categorias"
+                      optionLabel="nome" optionValue="id"
+                      placeholder="Filtrar por categoria…"
+                      [showClear]="true"></p-dropdown>
+        </div>
+      </div>
+
+      <!-- Produto -->
+      <div class="fcol fcol-full">
+        <label class="flabel">Produto *</label>
+        <div class="finput-dd">
+          <p-dropdown formControlName="produtoId"
+                      [options]="produtosParaDropdown"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Selecione o produto…"
+                      [filter]="true"
+                      filterBy="label"
+                      [showClear]="true"></p-dropdown>
+        </div>
+        <small class="ferror" *ngIf="isInvalid('produtoId')">Produto é obrigatório</small>
+      </div>
+
+      <!-- Ordem -->
+      <div class="fcol fcol-full">
+        <label class="flabel">Ordem de exibição</label>
+        <input type="number" pInputText formControlName="ordem" class="finput"
+               placeholder="0" min="0" />
+      </div>
+
+      <!-- Toggle ativo -->
+      <div class="ftoggle-item">
+        <p-inputSwitch formControlName="ativo"></p-inputSwitch>
+        <div>
+          <span class="toggle-label">Ativo</span>
+          <small class="toggle-hint">Aparece no PDV</small>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <p-button label="Cancelar" icon="pi pi-times"
+              styleClass="p-button-text"
+              (onClick)="dialogComplemento = false"></p-button>
+    <p-button [label]="editando ? 'Salvar Alterações' : 'Adicionar'"
+              icon="pi pi-check"
+              (onClick)="salvar()"></p-button>
+  </div>
+
+</p-dialog>

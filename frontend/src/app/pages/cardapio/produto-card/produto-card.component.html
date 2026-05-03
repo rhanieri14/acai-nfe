@@ -1,0 +1,48 @@
+<div class="produto-card" [class.inativo]="!produto.ativo" [style.--accent]="accentColor">
+
+  <div class="card-accent-bar"></div>
+
+  <div class="card-body">
+    <div class="card-header">
+      <div class="nome-wrap">
+        <span class="nome">{{ produto.nome }}</span>
+        <span class="tamanho" *ngIf="produto.tamanho">{{ produto.tamanho }}</span>
+      </div>
+      <span class="inativo-badge" *ngIf="!produto.ativo">Inativo</span>
+    </div>
+
+    <div class="preco" [class.indefinido]="!isPrecoDefinido">
+      {{ precoFormatado }}
+    </div>
+
+    <p class="descricao" *ngIf="produto.descricao">{{ produto.descricao }}</p>
+  </div>
+
+  <div class="card-footer">
+    <div class="toggle-wrap">
+      <p-inputSwitch
+        [ngModel]="produto.ativo"
+        (onChange)="toggleAtivo.emit(produto)"
+        [pTooltip]="produto.ativo ? 'Desativar' : 'Ativar'"
+        tooltipPosition="top">
+      </p-inputSwitch>
+    </div>
+    <div class="actions">
+      <button pButton pRipple
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-text btn-edit"
+              pTooltip="Editar"
+              tooltipPosition="top"
+              (click)="editar.emit(produto)">
+      </button>
+      <button pButton pRipple
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger btn-delete"
+              pTooltip="Excluir"
+              tooltipPosition="top"
+              (click)="excluir.emit(produto)">
+      </button>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,394 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="cardapio-container">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon"><i class="pi pi-book"></i></div>
+      <div>
+        <h1>Cardápio</h1>
+        <p class="header-sub" *ngIf="!loading">
+          {{ totalProdutos }} produtos &nbsp;·&nbsp;
+          <span class="ativos-count">{{ totalAtivos }} ativos</span>
+        </p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="abrirCopiarProdutos()">
+        <i class="pi pi-copy"></i> Copiar Produtos
+      </button>
+      <button class="btn-secondary" (click)="abrirGerenciarCategorias()">
+        <i class="pi pi-th-large"></i> Categorias
+      </button>
+      <button class="btn-primary" (click)="abrirNovoProduto()">
+        <i class="pi pi-plus"></i> Novo Produto
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Filtros ── -->
+  <div class="filtros-bar">
+    <div class="filtros-categorias">
+      <button class="chip" [class.chip-ativo]="filtroCategoria === null"
+              [style.--chip-color]="'#6B2D5C'"
+              (click)="filtroCategoria = null; aplicarFiltro()">
+        Todos
+      </button>
+      <button *ngFor="let cat of categorias"
+              class="chip"
+              [class.chip-ativo]="filtroCategoria === cat.id"
+              [style.--chip-color]="cat.cor"
+              (click)="filtroCategoria = cat.id!; aplicarFiltro()">
+        <i [class]="cat.icone"></i> {{ cat.nome }}
+      </button>
+    </div>
+    <span class="search-wrap">
+      <i class="pi pi-search"></i>
+      <input pInputText type="text" placeholder="Buscar produto..."
+             [(ngModel)]="filtroNome" (input)="aplicarFiltro()" class="search-input" />
+    </span>
+  </div>
+
+  <!-- ── Loading ── -->
+  <div class="loading-wrap" *ngIf="loading">
+    <p-progressSpinner strokeWidth="3" styleClass="spinner-sm"></p-progressSpinner>
+    <span>Carregando cardápio...</span>
+  </div>
+
+  <!-- ── Empty ── -->
+  <div class="empty-global" *ngIf="!loading && grupos.length === 0">
+    <i class="pi pi-inbox"></i>
+    <h3>Nenhum produto encontrado</h3>
+    <p>Tente mudar o filtro ou adicione um novo produto.</p>
+    <button class="btn-primary" (click)="abrirNovoProduto()">
+      <i class="pi pi-plus"></i> Adicionar Produto
+    </button>
+  </div>
+
+  <!-- ── Grupos ── -->
+  <div class="grupos-wrap" *ngIf="!loading">
+    <section class="grupo" *ngFor="let grupo of grupos">
+      <div class="grupo-header" [style.--cat-color]="grupo.categoria.cor">
+        <div class="grupo-header-left">
+          <div class="grupo-icon"><i [class]="grupo.categoria.icone"></i></div>
+          <span class="grupo-label">{{ grupo.categoria.nome }}</span>
+          <span class="grupo-count">{{ grupo.produtos.length }}</span>
+        </div>
+        <button class="grupo-copiar-btn"
+                pTooltip="Copiar produtos desta categoria para outra"
+                tooltipPosition="left"
+                (click)="abrirCopiarProdutos(grupo.categoria.id)">
+          <i class="pi pi-copy"></i> Copiar para...
+        </button>
+      </div>
+      <div class="cards-grid">
+        <app-produto-card
+          *ngFor="let produto of grupo.produtos; trackBy: trackById"
+          [produto]="produto"
+          [accentColor]="grupo.categoria.cor"
+          (editar)="abrirEditarProduto($event)"
+          (excluir)="confirmarExclusaoProduto($event)"
+          (toggleAtivo)="onToggleAtivo($event)">
+        </app-produto-card>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<!-- ══════════════ Dialog Produto ══════════════ -->
+<p-dialog [(visible)]="dialogProduto" [modal]="true" [style]="{ width: '500px' }"
+          [draggable]="false" [resizable]="false" styleClass="produto-dialog" [showHeader]="false">
+  <div class="dialog-inner">
+    <div class="dialog-head">
+      <div class="dialog-head-icon" [style.background]="editandoProduto ? '#f0f9ff' : '#fdf4ff'">
+        <i [class]="editandoProduto ? 'pi pi-pencil' : 'pi pi-plus-circle'"
+           [style.color]="editandoProduto ? '#0284c7' : '#9333ea'"></i>
+      </div>
+      <div>
+        <h2>{{ editandoProduto ? 'Editar Produto' : 'Novo Produto' }}</h2>
+        <p>{{ editandoProduto ? 'Atualize as informações' : 'Preencha os dados do produto' }}</p>
+      </div>
+      <button class="dialog-close" (click)="dialogProduto = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <form [formGroup]="formProduto" class="dialog-form">
+      <div class="dfield" [class.dfield--error]="isInvalidP('nome')">
+        <label class="dlabel">Nome <span class="req">*</span></label>
+        <input pInputText formControlName="nome" class="dinput" placeholder="Ex: Açaí Especial" />
+        <span class="derror" *ngIf="isInvalidP('nome')"><i class="pi pi-exclamation-circle"></i> Obrigatório</span>
+      </div>
+
+      <div class="drow">
+        <div class="dfield" [class.dfield--error]="isInvalidP('categoriaId')">
+          <label class="dlabel">Categoria <span class="req">*</span></label>
+          <p-dropdown formControlName="categoriaId" [options]="categorias"
+                      optionLabel="nome" optionValue="id"
+                      placeholder="Selecione..." styleClass="dinput-dropdown">
+          </p-dropdown>
+          <span class="derror" *ngIf="isInvalidP('categoriaId')"><i class="pi pi-exclamation-circle"></i> Obrigatório</span>
+        </div>
+        <div class="dfield">
+          <label class="dlabel">Tamanho / Variação</label>
+          <input pInputText formControlName="tamanho" class="dinput" placeholder="300ml, P, M, G..." />
+          <span class="dhint">Deixe em branco se não tiver</span>
+        </div>
+      </div>
+
+      <div class="drow">
+        <div class="dfield" [class.dfield--error]="isInvalidP('preco')">
+          <label class="dlabel">Preço <span class="req">*</span></label>
+          <p-inputNumber formControlName="preco" mode="currency" currency="BRL"
+                         locale="pt-BR" [minFractionDigits]="2" styleClass="dinput-number"></p-inputNumber>
+          <span class="dhint">R$ 0,00 = definir depois</span>
+        </div>
+        <div class="dfield">
+          <label class="dlabel">Ordem</label>
+          <p-inputNumber formControlName="ordem" [min]="0" [max]="999" styleClass="dinput-number"></p-inputNumber>
+          <span class="dhint">Menor = aparece primeiro</span>
+        </div>
+      </div>
+
+      <div class="dfield">
+        <label class="dlabel">Descrição <span class="dopt">(opcional)</span></label>
+        <input pInputText formControlName="descricao" class="dinput" placeholder="Detalhes do produto..." />
+      </div>
+
+      <div class="dtoggle">
+        <div class="dtoggle-info">
+          <span class="dtoggle-title">Produto ativo</span>
+          <span class="dtoggle-sub">Visível no PDV durante o atendimento</span>
+        </div>
+        <p-inputSwitch formControlName="ativo"></p-inputSwitch>
+      </div>
+    </form>
+
+    <div class="dialog-footer">
+      <button class="dbtn dbtn-ghost" (click)="dialogProduto = false">Cancelar</button>
+      <button class="dbtn dbtn-primary" (click)="salvarProduto()">
+        <i [class]="editandoProduto ? 'pi pi-check' : 'pi pi-plus'"></i>
+        {{ editandoProduto ? 'Salvar' : 'Adicionar' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- ══════════════ Dialog Gerenciar Categorias ══════════════ -->
+<p-dialog [(visible)]="dialogGerenciar" header="Gerenciar Categorias" [modal]="true"
+          [style]="{ width: '580px' }" [draggable]="false" [resizable]="false"
+          styleClass="gerenciar-dialog">
+  <div class="gerenciar-body">
+    <div class="gerenciar-lista">
+      <div class="cat-row" *ngFor="let cat of categorias; trackBy: trackById">
+        <div class="cat-preview" [style.background]="cat.cor + '18'" [style.border-color]="cat.cor + '40'">
+          <span class="cat-swatch" [style.background]="cat.cor">
+            <i [class]="cat.icone"></i>
+          </span>
+          <span class="cat-nome">{{ cat.nome }}</span>
+          <span class="cat-inativo" *ngIf="!cat.ativo">Inativa</span>
+        </div>
+        <div class="cat-acoes">
+          <button pButton pRipple icon="pi pi-pencil"
+                  class="p-button-rounded p-button-text p-button-secondary cat-btn"
+                  pTooltip="Editar" (click)="abrirEditarCategoria(cat)"></button>
+          <button pButton pRipple icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger cat-btn"
+                  pTooltip="Excluir" (click)="confirmarExclusaoCategoria(cat)"></button>
+        </div>
+      </div>
+
+      <div class="cat-empty" *ngIf="categorias.length === 0">
+        <i class="pi pi-inbox"></i> Nenhuma categoria cadastrada
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button class="dbtn dbtn-ghost" (click)="dialogGerenciar = false">Fechar</button>
+    <button class="dbtn dbtn-primary" (click)="abrirNovaCategoria()">
+      <i class="pi pi-plus"></i> Nova Categoria
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- ══════════════ Dialog Copiar Produtos ══════════════ -->
+<p-dialog [(visible)]="dialogCopiar" [modal]="true" [style]="{ width: '440px' }"
+          [draggable]="false" [resizable]="false" styleClass="produto-dialog" [showHeader]="false">
+  <div class="dialog-inner">
+    <div class="dialog-head">
+      <div class="dialog-head-icon" style="background:#f0fdf4">
+        <i class="pi pi-copy" style="color:#16a34a"></i>
+      </div>
+      <div>
+        <h2>Copiar Produtos</h2>
+        <p>Clona todos os produtos de uma categoria para outra</p>
+      </div>
+      <button class="dialog-close" (click)="dialogCopiar = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="dialog-form">
+      <div class="dfield">
+        <label class="dlabel">Copiar DE <span class="req">*</span></label>
+        <p-dropdown [(ngModel)]="copiarOrigemId"
+                    [options]="categorias"
+                    optionLabel="nome"
+                    optionValue="id"
+                    placeholder="Selecione a categoria origem..."
+                    styleClass="dinput-dropdown">
+          <ng-template pTemplate="selectedItem" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dd-swatch" [style.background]="item?.cor">
+                <i [class]="item?.icone"></i>
+              </span>
+              {{ item?.nome }}
+            </span>
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dd-swatch" [style.background]="item.cor">
+                <i [class]="item.icone"></i>
+              </span>
+              {{ item.nome }}
+            </span>
+          </ng-template>
+        </p-dropdown>
+      </div>
+
+      <div class="copiar-seta">
+        <i class="pi pi-arrow-down"></i>
+      </div>
+
+      <div class="dfield">
+        <label class="dlabel">Copiar PARA <span class="req">*</span></label>
+        <p-dropdown [(ngModel)]="copiarDestinoId"
+                    [options]="categoriasDestinoDisponiveis"
+                    optionLabel="nome"
+                    optionValue="id"
+                    placeholder="Selecione a categoria destino..."
+                    styleClass="dinput-dropdown"
+                    [disabled]="!copiarOrigemId">
+          <ng-template pTemplate="selectedItem" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dd-swatch" [style.background]="item?.cor">
+                <i [class]="item?.icone"></i>
+              </span>
+              {{ item?.nome }}
+            </span>
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="dd-swatch" [style.background]="item.cor">
+                <i [class]="item.icone"></i>
+              </span>
+              {{ item.nome }}
+            </span>
+          </ng-template>
+        </p-dropdown>
+      </div>
+
+      <div class="copiar-info" *ngIf="copiarOrigemId && copiarDestinoId">
+        <i class="pi pi-info-circle"></i>
+        Todos os produtos da categoria selecionada serão duplicados no destino.
+        Os preços e a ordem de exibição serão mantidos.
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button class="dbtn dbtn-ghost" (click)="dialogCopiar = false">Cancelar</button>
+      <button class="dbtn dbtn-primary" (click)="executarCopia()" [disabled]="copiando">
+        <i [class]="copiando ? 'pi pi-spin pi-spinner' : 'pi pi-copy'"></i>
+        {{ copiando ? 'Copiando...' : 'Copiar Produtos' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>
+
+<!-- ══════════════ Dialog Nova/Editar Categoria ══════════════ -->
+<p-dialog [(visible)]="dialogCategoria" [modal]="true" [style]="{ width: '460px' }"
+          [draggable]="false" [resizable]="false" styleClass="produto-dialog" [showHeader]="false">
+  <div class="dialog-inner">
+    <div class="dialog-head">
+      <div class="dialog-head-icon" [style.background]="editandoCategoria ? '#f0f9ff' : '#f0fdf4'">
+        <i [class]="editandoCategoria ? 'pi pi-pencil' : 'pi pi-th-large'"
+           [style.color]="editandoCategoria ? '#0284c7' : '#16a34a'"></i>
+      </div>
+      <div>
+        <h2>{{ editandoCategoria ? 'Editar Categoria' : 'Nova Categoria' }}</h2>
+        <p>Personalize nome, ícone e cor</p>
+      </div>
+      <button class="dialog-close" (click)="dialogCategoria = false"><i class="pi pi-times"></i></button>
+    </div>
+
+    <form [formGroup]="formCategoria" class="dialog-form">
+      <div class="dfield" [class.dfield--error]="isInvalidC('nome')">
+        <label class="dlabel">Nome <span class="req">*</span></label>
+        <input pInputText formControlName="nome" class="dinput" placeholder="Ex: Sobremesas, Lanches..." />
+        <span class="derror" *ngIf="isInvalidC('nome')"><i class="pi pi-exclamation-circle"></i> Obrigatório</span>
+      </div>
+
+      <!-- Preview ao vivo -->
+      <div class="cat-preview-live" [style.background]="formCategoria.get('cor')?.value + '15'"
+           [style.border-color]="formCategoria.get('cor')?.value">
+        <span class="cat-swatch" [style.background]="formCategoria.get('cor')?.value">
+          <i [class]="formCategoria.get('icone')?.value"></i>
+        </span>
+        <span style="font-weight:600; color:#111">{{ formCategoria.get('nome')?.value || 'Prévia da categoria' }}</span>
+      </div>
+
+      <div class="dfield">
+        <label class="dlabel">Ícone</label>
+        <p-dropdown formControlName="icone" [options]="icones"
+                    optionLabel="label" optionValue="value"
+                    styleClass="dinput-dropdown">
+          <ng-template pTemplate="selectedItem" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <i [class]="item?.value"></i> {{ item?.label }}
+            </span>
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            <span style="display:flex;align-items:center;gap:8px">
+              <i [class]="item.value"></i> {{ item.label }}
+            </span>
+          </ng-template>
+        </p-dropdown>
+      </div>
+
+      <div class="dfield">
+        <label class="dlabel">Cor</label>
+        <div class="cores-grid">
+          <button *ngFor="let cor of coresPre"
+                  class="cor-btn"
+                  [class.cor-btn-ativo]="formCategoria.get('cor')?.value === cor"
+                  [style.background]="cor"
+                  type="button"
+                  (click)="formCategoria.patchValue({ cor })">
+          </button>
+        </div>
+        <input pInputText formControlName="cor" class="dinput" placeholder="#6B2D5C"
+               style="margin-top:8px; font-family:monospace; font-size:0.82rem" />
+      </div>
+
+      <div class="drow">
+        <div class="dfield">
+          <label class="dlabel">Ordem</label>
+          <p-inputNumber formControlName="ordem" [min]="0" styleClass="dinput-number"></p-inputNumber>
+        </div>
+        <div class="dtoggle" style="flex:1; align-self:flex-end">
+          <div class="dtoggle-info">
+            <span class="dtoggle-title">Ativa</span>
+          </div>
+          <p-inputSwitch formControlName="ativo"></p-inputSwitch>
+        </div>
+      </div>
+    </form>
+
+    <div class="dialog-footer">
+      <button class="dbtn dbtn-ghost" (click)="dialogCategoria = false">Cancelar</button>
+      <button class="dbtn dbtn-primary" (click)="salvarCategoria()">
+        <i [class]="editandoCategoria ? 'pi pi-check' : 'pi pi-plus'"></i>
+        {{ editandoCategoria ? 'Salvar' : 'Criar Categoria' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>

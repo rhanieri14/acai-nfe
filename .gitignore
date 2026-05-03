@@ -1,0 +1,24 @@
+# ── Docker volumes ────────────────────────────────────────────────────────────
+postgres-data/
+
+# ── Backend (Java / Maven) ────────────────────────────────────────────────────
+backend/target/
+*.class
+*.jar
+
+# ── Frontend (Angular / Node) ─────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/

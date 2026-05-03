@@ -1,0 +1,6 @@
+.page-container { display: flex; flex-direction: column; gap: 24px; }
+.card-header { display: flex; align-items: center; gap: 12px; padding: 8px 0; h2 { margin: 0; font-size: 18px; color: #333; } }
+.header-icon { font-size: 24px; color: #c54b8c; }
+.card-content { padding: 20px 0; text-align: center; }
+.placeholder-text { font-size: 16px; color: #666; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.description-text { font-size: 14px; color: #999; margin: 0; }

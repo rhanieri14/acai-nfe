@@ -1,0 +1,48 @@
+/* Variáveis de cores - Tema Açaí (Roxo/Vinho) */
+$primary-color: #6B2D5C;
+$secondary-color: #8B3A62;
+$accent-color: #C54B8C;
+$light-bg: #F8F6F9;
+$dark-text: #2C2C2C;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: $light-bg;
+  color: $dark-text;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $primary-color;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: $secondary-color;
+}
